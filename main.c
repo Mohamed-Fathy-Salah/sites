@@ -222,7 +222,8 @@ void removeSite(int argc, char *argv[]) {
 int callback(void *NotUsed, int argc, char **argv, char **azColName) {
   NotUsed = 0;
   for (int i = 0; i < argc; i++)
-    printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    printf("%s\t", argv[i] ? argv[i] : "NULL");
+  printf("\n");
   return 0;
 }
 

@@ -53,8 +53,8 @@ void exec(std::string sql) {
 }
 
 void initDB() {
-  // todo: get env $HOME
-  const std::string DATA_PATH = std::string(getenv("HOME")) + "/.config/sites.db";
+  const std::string DATA_PATH =
+      std::string(getenv("HOME")) + "/.config/sites.db";
   char *err_msg = 0;
 
   int rc = sqlite3_open(DATA_PATH.c_str(), &db);
@@ -68,6 +68,9 @@ void initDB() {
        "AUTOINCREMENT, name VARCHAR(20) NOT NULL, url "
        "VARCHAR(200) NOT NULL, before_command VARCHAR(50), after_command "
        "VARCHAR(50), finished INTEGER DEFAULT 0);");
+
+  exec("CREATE TABLE IF NOT EXISTS last_time_modified (value date);");
+  exec("INSERT INTO last_time_modified (value) VALUES(date());");
 }
 
 void newSite(int argc, char *argv[]) {
@@ -256,8 +259,22 @@ void listSites(int argc, char *argv[]) {
   sqlite3_finalize(stmt);
 }
 
+void resetSites() {
+  sqlite3_stmt *stmt;
+  sqlite3_prepare_v2(db,
+                     "SELECT date() = (select value FROM last_time_modified);",
+                     -1, &stmt, NULL);
+
+  sqlite3_step(stmt);
+  char today = sqlite3_column_text(stmt, 0)[0];
+  sqlite3_finalize(stmt);
+
+  if (today == '0')
+    exec("UPDATE sites SET finished = 0");
+}
+
 void openSite() {
-  // todo: reset completed if today != last day modified
+  resetSites();
   sqlite3_stmt *stmt;
   sqlite3_prepare_v2(db,
                      "SELECT id || '_' || name FROM sites WHERE finished = 0;",

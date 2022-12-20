@@ -1,7 +1,10 @@
 ## Sites
 Sites that I open every day.
+
 ## Install
 Install `dmenu`
+Run `sudo make`
+
 ## Usage
 ### Add new site
 `sites [-n -s short -u url [-b before_command] [-a after_command]]`

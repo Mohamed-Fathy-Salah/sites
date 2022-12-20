@@ -6,14 +6,10 @@
 
 sqlite3 *db;
 
-int toInt(char *s);
-void concat(char *sql, const char *str, char *val);
-void exec(char *sql, void *cb);
 void initDB();
 void newSite(int argc, char *argv[]);
 void modifySite(int argc, char *argv[]);
 void removeSite(int argc, char *argv[]);
-int callback(void *NotUsed, int argc, char **argv, char **azColName);
 void listSites(int argc, char *argv[]);
 void open();
 
@@ -59,9 +55,9 @@ void concat(char *sql, const char *str, char *val) {
   strcat(sql, tmp);
 }
 
-void exec(char *sql, void *cb) {
+void exec(char *sql) {
   char *err_msg = 0;
-  int rc = sqlite3_exec(db, sql, cb, 0, &err_msg);
+  int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
   if (rc != SQLITE_OK) {
     fprintf(stderr, "SQL error: %s\n", err_msg);
     sqlite3_free(err_msg);
@@ -85,8 +81,7 @@ void initDB() {
   exec("CREATE TABLE IF NOT EXISTS sites (id INTEGER PRIMARY KEY "
        "AUTOINCREMENT, name VARCHAR(20) NOT NULL, url "
        "VARCHAR(200) NOT NULL, before_command VARCHAR(50), after_command "
-       "VARCHAR(50), finished INTEGER DEFAULT 0);",
-       0);
+       "VARCHAR(50), finished INTEGER DEFAULT 0);");
 }
 
 void newSite(int argc, char *argv[]) {
@@ -127,7 +122,7 @@ void newSite(int argc, char *argv[]) {
           "INSERT INTO sites (name,url,before_command,after_command) "
           "VALUES(\"%s\",\"%s\",\"%s\",\"%s\");",
           name, url, beforeCommand, afterCommand);
-  exec(sql, 0);
+  exec(sql);
 }
 
 void modifySite(int argc, char *argv[]) {
@@ -196,7 +191,7 @@ void modifySite(int argc, char *argv[]) {
   sprintf(tmp, " WHERE id = %d;", id);
   strcat(sql, tmp);
 
-  exec(sql, 0);
+  exec(sql);
 }
 
 void removeSite(int argc, char *argv[]) {
@@ -216,15 +211,7 @@ void removeSite(int argc, char *argv[]) {
 
   char sql[50];
   sprintf(sql, "DELETE FROM sites WHERE id = %d;", id);
-  exec(sql, 0);
-}
-
-int callback(void *NotUsed, int argc, char **argv, char **azColName) {
-  NotUsed = 0;
-  for (int i = 0; i < argc; i++)
-    printf("%s\t", argv[i] ? argv[i] : "NULL");
-  printf("\n");
-  return 0;
+  exec(sql);
 }
 
 void listSites(int argc, char *argv[]) {
@@ -261,22 +248,20 @@ void listSites(int argc, char *argv[]) {
 
   char sql[250] = "SELECT ";
   if (!s && !u && !b && !a && !c)
-    strcat(sql, "*,");
+    strcat(sql, "*");
   else {
+    strcat(sql, "id");
     if (s)
-      strcat(sql, "name,");
+      strcat(sql, ",name");
     if (u)
-      strcat(sql, "url,");
+      strcat(sql, ",url");
     if (b)
-      strcat(sql, "before_command,");
+      strcat(sql, ",before_command");
     if (a)
-      strcat(sql, "after_command,");
+      strcat(sql, ",after_command");
     if (c)
-      strcat(sql, "finished,");
+      strcat(sql, ",finished");
   }
-
-  // remove last comma
-  sql[strlen(sql) - 1] = '\0';
 
   strcat(sql, " FROM sites");
 
@@ -286,23 +271,32 @@ void listSites(int argc, char *argv[]) {
     strcat(sql, tmp);
   }
 
-  // todo: use stmt as in open
-  //https://gist.github.com/jsok/2936764
-  exec(sql, callback);
+  sqlite3_stmt *stmt;
+  sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+
+  while (sqlite3_step(stmt) != SQLITE_DONE) {
+    int num_cols = sqlite3_column_count(stmt);
+    for (int i = 0; i < num_cols; i++)
+      printf("%s\t", sqlite3_column_text(stmt, i));
+    printf("\n");
+  }
+  sqlite3_finalize(stmt);
 }
 
 void open() {
   // todo: reset completed if today != last day modified
-    sqlite3_stmt *stmt;
-    sqlite3_prepare_v2(db, "SELECT id || '_' || name FROM sites WHERE finished = 0;", -1, &stmt, NULL);
+  sqlite3_stmt *stmt;
+  sqlite3_prepare_v2(db,
+                     "SELECT id || '_' || name FROM sites WHERE finished = 0;",
+                     -1, &stmt, NULL);
 
-    char names[500];
-    while(sqlite3_step(stmt) != SQLITE_DONE) {
-        char name[30];
-        sprintf(name, "%s\n", sqlite3_column_text(stmt, 0));
-        strcat(names, name);
-    }
-    sqlite3_finalize(stmt);
+  char names[500];
+  while (sqlite3_step(stmt) != SQLITE_DONE) {
+    char name[30];
+    sprintf(name, "%s\n", sqlite3_column_text(stmt, 0));
+    strcat(names, name);
+  }
+  sqlite3_finalize(stmt);
 
   FILE *pp;
   char cmd[600];
@@ -310,11 +304,12 @@ void open() {
 
   pp = popen(cmd, "r");
   if (pp != NULL) {
-      char *line;
-      char buf[30];
-      line = fgets(buf, sizeof buf, pp);
-      if (line == NULL) exit(1);
-      printf("%s", line); 
+    char *line;
+    char buf[30];
+    line = fgets(buf, sizeof buf, pp);
+    if (line == NULL)
+      exit(1);
+    printf("%s", line);
     pclose(pp);
   }
 

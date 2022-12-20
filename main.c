@@ -232,12 +232,24 @@ void listSites(int argc, char *argv[]) {
   char s = 0, u = 0, b = 0, a = 0, c = 0, f = 2;
   while ((opt = getopt(argc, argv, "subacf:")) != -1) {
     switch (opt) {
-    case 's': s = 1; break;
-    case 'u': u = 1; break;
-    case 'b': b = 1; break;
-    case 'a': a = 1; break;
-    case 'c': c = 1; break;
-    case 'f': f = toInt(optarg); break;
+    case 's':
+      s = 1;
+      break;
+    case 'u':
+      u = 1;
+      break;
+    case 'b':
+      b = 1;
+      break;
+    case 'a':
+      a = 1;
+      break;
+    case 'c':
+      c = 1;
+      break;
+    case 'f':
+      f = toInt(optarg);
+      break;
     case ':':
       printf("option needs a value\n");
       exit(1);
@@ -248,13 +260,19 @@ void listSites(int argc, char *argv[]) {
   }
 
   char sql[250] = "SELECT ";
-  if(!s && !u && !b && !a && !c) strcat(sql, "*,");
+  if (!s && !u && !b && !a && !c)
+    strcat(sql, "*,");
   else {
-      if(s) strcat(sql, "name,");
-      if(u) strcat(sql, "url,");
-      if(b) strcat(sql, "before_command,");
-      if(a) strcat(sql, "after_command,");
-      if(c) strcat(sql, "finished,");
+    if (s)
+      strcat(sql, "name,");
+    if (u)
+      strcat(sql, "url,");
+    if (b)
+      strcat(sql, "before_command,");
+    if (a)
+      strcat(sql, "after_command,");
+    if (c)
+      strcat(sql, "finished,");
   }
 
   // remove last comma
@@ -262,15 +280,44 @@ void listSites(int argc, char *argv[]) {
 
   strcat(sql, " FROM sites");
 
-  if(f == 0 || f == 1) {
-      char tmp[100];
-      sprintf(tmp, " WHERE finished = %d;",  f);
-      strcat(sql, tmp);
+  if (f == 0 || f == 1) {
+    char tmp[100];
+    sprintf(tmp, " WHERE finished = %d;", f);
+    strcat(sql, tmp);
   }
 
+  // todo: use stmt as in open
+  //https://gist.github.com/jsok/2936764
   exec(sql, callback);
 }
 
 void open() {
-  // reset completed if today != last day modified
+  // todo: reset completed if today != last day modified
+    sqlite3_stmt *stmt;
+    sqlite3_prepare_v2(db, "SELECT id || '_' || name FROM sites WHERE finished = 0;", -1, &stmt, NULL);
+
+    char names[500];
+    while(sqlite3_step(stmt) != SQLITE_DONE) {
+        char name[30];
+        sprintf(name, "%s\n", sqlite3_column_text(stmt, 0));
+        strcat(names, name);
+    }
+    sqlite3_finalize(stmt);
+
+  FILE *pp;
+  char cmd[600];
+  sprintf(cmd, "echo '%s' | dmenu -i", names);
+
+  pp = popen(cmd, "r");
+  if (pp != NULL) {
+      char *line;
+      char buf[30];
+      line = fgets(buf, sizeof buf, pp);
+      if (line == NULL) exit(1);
+      printf("%s", line); 
+    pclose(pp);
+  }
+
+  // todo: select before_command, url, after_command from sites where id = ?
+  // todo: run before_command && $BROWSER url && after_command
 }

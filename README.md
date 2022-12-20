@@ -10,6 +10,8 @@ Install `dmenu`
 
 ### Modify site
 `sites [-m short [-s short] [-u url] [-b before_command] [-a after_command] [-f 0(no)|1(yes)|2(toggle)]]`
+> toggle
+ `sites -n -s leetcode -u https://leetcode.com -b 'xdotool key super+1' -a '$BROWSER https://calendar.google.com/calendar/u/1/r/day'`
 
 ### Remove site
 `sites [-r short]`

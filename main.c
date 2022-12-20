@@ -180,17 +180,17 @@ void modifySite(int argc, char *argv[]) {
   if (afterCommand[0])
     concat(sql, " after_command = \"%s\",", afterCommand);
 
-  // remove last comma
-  sql[strlen(sql) - 1] = '\0';
-
   // toggle finished
   if (finished == 2)
-    strcat(sql, " finished = !finished");
+    strcat(sql, " finished = 1 - finished,");
   else if (finished == 0 || finished == 1) {
     char tmp[100];
-    sprintf(tmp, " finished = %d, ", finished);
+    sprintf(tmp, " finished = %d,", finished);
     strcat(sql, tmp);
   }
+
+  // remove last comma
+  sql[strlen(sql) - 1] = '\0';
 
   char tmp[20];
   sprintf(tmp, " WHERE id = %d;", id);
@@ -227,6 +227,21 @@ int callback(void *NotUsed, int argc, char **argv, char **azColName) {
 }
 
 void listSites(int argc, char *argv[]) {
+  /*int opt;*/
+  /*while ((opt = getopt(argc, argv, "")) != -1) {*/
+    /*switch (opt) {*/
+    /*case 'f':*/
+      /*finished = toInt(optarg);*/
+      /*break;*/
+    /*case ':':*/
+      /*printf("option needs a value\n");*/
+      /*exit(1);*/
+    /*case '?':*/
+      /*puts("not an option");*/
+      /*exit(1);*/
+    /*}*/
+  /*}*/
+
   exec("SELECT * from sites;", callback);
 }
 

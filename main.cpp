@@ -287,6 +287,11 @@ void openSite() {
              "\n";
   sqlite3_finalize(stmt);
 
+  if (names.empty()) {
+    system("herbe 'All Done'");
+    exit(0);
+  }
+
   FILE *pp;
   std::string cmd = "echo '" + names + "' | dmenu -i";
 
@@ -333,5 +338,8 @@ void openSite() {
     cmd += " && " + after;
 
   sqlite3_finalize(stmt);
+
   system(cmd.c_str());
+
+  exec("UPDATE sites SET finished = 1 WHERE id = " + std::string(line));
 }

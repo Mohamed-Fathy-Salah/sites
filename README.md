@@ -2,7 +2,7 @@
 Sites that I open every day.
 
 ## Install
-Install `dmenu`
+Install `dmenu`, `herbe`
 Run `sudo make`
 
 ## Usage

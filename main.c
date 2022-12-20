@@ -292,7 +292,7 @@ void open() {
 
   char names[500];
   while (sqlite3_step(stmt) != SQLITE_DONE) {
-    char name[30];
+    char name[30] = {'\0'};
     sprintf(name, "%s\n", sqlite3_column_text(stmt, 0));
     strcat(names, name);
   }
@@ -303,16 +303,43 @@ void open() {
   sprintf(cmd, "echo '%s' | dmenu -i", names);
 
   pp = popen(cmd, "r");
-  if (pp != NULL) {
-    char *line;
-    char buf[30];
-    line = fgets(buf, sizeof buf, pp);
-    if (line == NULL)
-      exit(1);
-    printf("%s", line);
-    pclose(pp);
-  }
+  char *line;
 
-  // todo: select before_command, url, after_command from sites where id = ?
-  // todo: run before_command && $BROWSER url && after_command
+  if (pp == NULL)
+    exit(1);
+  char buf[30];
+  line = fgets(buf, sizeof buf, pp);
+  if (line == NULL)
+    exit(1);
+  pclose(pp);
+
+  // keep the id only
+  char *p = line;
+  while (*p != '_')
+    p++;
+  *p = '\0';
+
+  char sql[75];
+  sprintf(sql,
+          "SELECT before_command, url, after_command FROM sites WHERE id = %s;",
+          line);
+
+  // cmd = {before_command, url, after_command}
+  sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+  if (sqlite3_step(stmt) == SQLITE_DONE)
+    exit(1);
+
+  cmd[0] = '\0';
+
+  if (sqlite3_column_type(stmt, 0) != SQLITE_NULL)
+    sprintf(cmd, "%s && ", sqlite3_column_text(stmt, 0));
+
+  sprintf(cmd, "%s $BROWSER %s", cmd, sqlite3_column_text(stmt, 1));
+
+  if (sqlite3_column_type(stmt, 2) != SQLITE_NULL)
+    sprintf(cmd, "%s && %s", cmd, sqlite3_column_text(stmt, 2));
+
+  sqlite3_finalize(stmt);
+
+  system(cmd);
 }

@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,10 +54,10 @@ void exec(std::string sql) {
 
 void initDB() {
   // todo: get env $HOME
-  const char *DATA_PATH = "/home/mofasa/.config/routine/data.db";
+  const std::string DATA_PATH = std::string(getenv("HOME")) + "/.config/sites.db";
   char *err_msg = 0;
 
-  int rc = sqlite3_open(DATA_PATH, &db);
+  int rc = sqlite3_open(DATA_PATH.c_str(), &db);
   if (rc != SQLITE_OK) {
     fprintf(stderr, "Cannot open database: %s\n", sqlite3_errmsg(db));
     sqlite3_close(db);

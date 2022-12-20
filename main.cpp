@@ -264,7 +264,9 @@ void openSite() {
 
   std::string names;
   while (sqlite3_step(stmt) != SQLITE_DONE)
-    names += std::string( reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0))) + "\n";
+    names += std::string(
+                 reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0))) +
+             "\n";
   sqlite3_finalize(stmt);
 
   FILE *pp;
@@ -298,20 +300,20 @@ void openSite() {
 
   cmd = "";
 
-  if (sqlite3_column_type(stmt, 0) != SQLITE_NULL)
-    cmd += std::string(
-               reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0))) +
-           " && ";
+  std::string before =
+      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
+  if (before.size())
+    cmd += before + " && ";
 
   cmd +=
       "$BROWSER " +
       std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)));
 
-  if (sqlite3_column_type(stmt, 2) != SQLITE_NULL)
-    cmd += " && " + std::string(reinterpret_cast<const char *>(
-                        sqlite3_column_text(stmt, 2)));
+  std::string after =
+      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2)));
+  if (after.size())
+    cmd += " && " + after;
 
   sqlite3_finalize(stmt);
-
   system(cmd.c_str());
 }

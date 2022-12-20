@@ -19,7 +19,9 @@ Install `dmenu`
  `sites -r -i 1`
 
 ### List sites
-`sites [-l [-s] [-u] [-b] [-a] [-f 0(no)|1(yes)]]`
+`sites [-l [-s] [-u] [-b] [-a] [-c] [-f 0(no)|1(yes)]]`
+>list name, url of unfinished sites
+ `sites -l -su -f 0`
 
 ### Open site
 `sites`

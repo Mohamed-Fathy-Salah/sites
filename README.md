@@ -9,14 +9,17 @@ Install `dmenu`
  `sites -n -s leetcode -u https://leetcode.com -b 'xdotool key super+1' -a '$BROWSER https://calendar.google.com/calendar/u/1/r/day'`
 
 ### Modify site
-`sites [-m short [-s short] [-u url] [-b before_command] [-a after_command] [-f 0(no)|1(yes)|2(toggle)]]`
-> toggle
- `sites -n -s leetcode -u https://leetcode.com -b 'xdotool key super+1' -a '$BROWSER https://calendar.google.com/calendar/u/1/r/day'`
+`sites [-m -i id [-s short] [-u url] [-b before_command] [-a after_command] [-f 0(no)|1(yes)|2(toggle)]]`
+>change name to 'new name', toggle finished on site with id = 1 
+ `sites -m -i 1 -s 'new name' -f 2`
 
 ### Remove site
-`sites [-r short]`
+`sites [-r -i id]`
+>remove site with id = 1
+ `sites -r -i 1`
 
 ### List sites
-`sites [-l [-s] [-u] [-b] [-a] [-f (finished)] [-F (unfinished)]]`
+`sites [-l [-s] [-u] [-b] [-a] [-f 0(no)|1(yes)]]`
+
 ### Open site
 `sites`

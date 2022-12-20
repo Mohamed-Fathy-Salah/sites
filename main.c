@@ -227,22 +227,47 @@ int callback(void *NotUsed, int argc, char **argv, char **azColName) {
 }
 
 void listSites(int argc, char *argv[]) {
-  /*int opt;*/
-  /*while ((opt = getopt(argc, argv, "")) != -1) {*/
-    /*switch (opt) {*/
-    /*case 'f':*/
-      /*finished = toInt(optarg);*/
-      /*break;*/
-    /*case ':':*/
-      /*printf("option needs a value\n");*/
-      /*exit(1);*/
-    /*case '?':*/
-      /*puts("not an option");*/
-      /*exit(1);*/
-    /*}*/
-  /*}*/
+  int opt;
+  char s = 0, u = 0, b = 0, a = 0, c = 0, f = 2;
+  while ((opt = getopt(argc, argv, "subacf:")) != -1) {
+    switch (opt) {
+    case 's': s = 1; break;
+    case 'u': u = 1; break;
+    case 'b': b = 1; break;
+    case 'a': a = 1; break;
+    case 'c': c = 1; break;
+    case 'f': f = toInt(optarg); break;
+    case ':':
+      printf("option needs a value\n");
+      exit(1);
+    case '?':
+      puts("not an option");
+      exit(1);
+    }
+  }
 
-  exec("SELECT * from sites;", callback);
+  char sql[250] = "SELECT ";
+  if(!s && !u && !b && !a && !c) strcat(sql, "*,");
+  else {
+      if(s) strcat(sql, "name,");
+      if(u) strcat(sql, "url,");
+      if(b) strcat(sql, "before_command,");
+      if(a) strcat(sql, "after_command,");
+      if(c) strcat(sql, "finished,");
+  }
+
+  // remove last comma
+  sql[strlen(sql) - 1] = '\0';
+
+  strcat(sql, " FROM sites");
+
+  if(f == 0 || f == 1) {
+      char tmp[100];
+      sprintf(tmp, " WHERE finished = %d;",  f);
+      strcat(sql, tmp);
+  }
+
+  exec(sql, callback);
 }
 
 void open() {

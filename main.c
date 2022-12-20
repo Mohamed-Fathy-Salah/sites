@@ -6,6 +6,44 @@
 
 sqlite3 *db;
 
+int toInt(char *s);
+void concat(char *sql, const char *str, char *val);
+void exec(char *sql, void *cb);
+void initDB();
+void newSite(int argc, char *argv[]);
+void modifySite(int argc, char *argv[]);
+void removeSite(int argc, char *argv[]);
+int callback(void *NotUsed, int argc, char **argv, char **azColName);
+void listSites(int argc, char *argv[]);
+void open();
+
+int main(int argc, char *argv[]) {
+  initDB();
+
+  switch (getopt(argc, argv, "nmrl")) {
+  case 'n':
+    newSite(argc, argv);
+    break;
+  case 'm':
+    modifySite(argc, argv);
+    break;
+  case 'r':
+    removeSite(argc, argv);
+    break;
+  case 'l':
+    listSites(argc, argv);
+    break;
+  case '?':
+    printf("unknown option: %c\n", optopt);
+    break;
+  default:
+    open();
+  }
+
+  sqlite3_close(db);
+  return 0;
+}
+
 int toInt(char *s) {
   int n = 0;
   while (*s) {
@@ -33,6 +71,7 @@ void exec(char *sql, void *cb) {
 }
 
 void initDB() {
+  // todo: get env $HOME
   const char *DATA_PATH = "/home/mofasa/.config/routine/data.db";
   char *err_msg = 0;
 
@@ -70,10 +109,10 @@ void newSite(int argc, char *argv[]) {
       break;
     case ':':
       printf("option needs a value\n");
-      break;
+      exit(1);
     case '?':
       puts("not an option");
-      break;
+      exit(1);
     }
   }
 
@@ -117,10 +156,10 @@ void modifySite(int argc, char *argv[]) {
       break;
     case ':':
       printf("option needs a value\n");
-      break;
+      exit(1);
     case '?':
       puts("not an option");
-      break;
+      exit(1);
     }
   }
 
@@ -132,10 +171,14 @@ void modifySite(int argc, char *argv[]) {
   // no need to check for sql injection bcs it is user sided
   char sql[360] = "UPDATE sites SET";
 
-  if (name[0]) concat(sql, " name = \"%s\",", name);
-  if (url[0]) concat(sql, " url = \"%s\",", url);
-  if (beforeCommand[0]) concat(sql, " before_command = \"%s\",", beforeCommand);
-  if (afterCommand[0]) concat(sql, " after_command = \"%s\",", afterCommand);
+  if (name[0])
+    concat(sql, " name = \"%s\",", name);
+  if (url[0])
+    concat(sql, " url = \"%s\",", url);
+  if (beforeCommand[0])
+    concat(sql, " before_command = \"%s\",", beforeCommand);
+  if (afterCommand[0])
+    concat(sql, " after_command = \"%s\",", afterCommand);
 
   // remove last comma
   sql[strlen(sql) - 1] = '\0';
@@ -156,7 +199,25 @@ void modifySite(int argc, char *argv[]) {
   exec(sql, 0);
 }
 
-void removeSite(int argc, char *argv[]) {}
+void removeSite(int argc, char *argv[]) {
+  int id = -1;
+
+  switch (getopt(argc, argv, "i:")) {
+  case 'i':
+    id = toInt(optarg);
+    break;
+  case ':':
+    printf("option needs a value\n");
+    exit(1);
+  case '?':
+    puts("not an option");
+    exit(1);
+  }
+
+  char sql[50];
+  sprintf(sql, "DELETE FROM sites WHERE id = %d;", id);
+  exec(sql, 0);
+}
 
 int callback(void *NotUsed, int argc, char **argv, char **azColName) {
   NotUsed = 0;
@@ -171,31 +232,4 @@ void listSites(int argc, char *argv[]) {
 
 void open() {
   // reset completed if today != last day modified
-}
-
-int main(int argc, char *argv[]) {
-  initDB();
-
-  switch (getopt(argc, argv, "nmrl")) {
-  case 'n':
-    newSite(argc, argv);
-    break;
-  case 'm':
-    modifySite(argc, argv);
-    break;
-  case 'r':
-    removeSite(argc, argv);
-    break;
-  case 'l':
-    listSites(argc, argv);
-    break;
-  case '?':
-    printf("unknown option: %c\n", optopt);
-    break;
-  default:
-    open();
-  }
-
-  sqlite3_close(db);
-  return 0;
 }

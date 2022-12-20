@@ -1,7 +1,7 @@
 #include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <unistd.h>
 
 sqlite3 *db;
@@ -11,7 +11,7 @@ void newSite(int argc, char *argv[]);
 void modifySite(int argc, char *argv[]);
 void removeSite(int argc, char *argv[]);
 void listSites(int argc, char *argv[]);
-void open();
+void openSite();
 
 int main(int argc, char *argv[]) {
   initDB();
@@ -33,31 +33,16 @@ int main(int argc, char *argv[]) {
     printf("unknown option: %c\n", optopt);
     break;
   default:
-    open();
+    openSite();
   }
 
   sqlite3_close(db);
   return 0;
 }
 
-int toInt(char *s) {
-  int n = 0;
-  while (*s) {
-    n = n * 10 + (*s - '0');
-    s++;
-  }
-  return n;
-}
-
-void concat(char *sql, const char *str, char *val) {
-  char tmp[250];
-  sprintf(tmp, str, val);
-  strcat(sql, tmp);
-}
-
-void exec(char *sql) {
+void exec(std::string sql) {
   char *err_msg = 0;
-  int rc = sqlite3_exec(db, sql, 0, 0, &err_msg);
+  int rc = sqlite3_exec(db, sql.c_str(), 0, 0, &err_msg);
   if (rc != SQLITE_OK) {
     fprintf(stderr, "SQL error: %s\n", err_msg);
     sqlite3_free(err_msg);
@@ -86,21 +71,21 @@ void initDB() {
 
 void newSite(int argc, char *argv[]) {
   int opt;
-  char name[21], url[201], beforeCommand[51], afterCommand[51];
+  std::string name, url, beforeCommand, afterCommand;
 
   while ((opt = getopt(argc, argv, "s:u:b:a:")) != -1) {
     switch (opt) {
     case 's':
-      strcpy(name, optarg);
+      name = optarg;
       break;
     case 'u':
-      strcpy(url, optarg);
+      url = optarg;
       break;
     case 'b':
-      strcpy(beforeCommand, optarg);
+      beforeCommand = optarg;
       break;
     case 'a':
-      strcpy(afterCommand, optarg);
+      afterCommand = optarg;
       break;
     case ':':
       printf("option needs a value\n");
@@ -117,37 +102,34 @@ void newSite(int argc, char *argv[]) {
   }
 
   // no need to check for sql injection bcs it is user sided
-  char sql[360];
-  sprintf(sql,
-          "INSERT INTO sites (name,url,before_command,after_command) "
-          "VALUES(\"%s\",\"%s\",\"%s\",\"%s\");",
-          name, url, beforeCommand, afterCommand);
-  exec(sql);
+  exec("INSERT INTO sites (name,url,before_command,after_command) VALUES(\"" +
+       name + "\",\"" + url + "\",\"" + beforeCommand + "\",\"" + afterCommand +
+       "\");");
 }
 
 void modifySite(int argc, char *argv[]) {
-  int opt, id = -1, finished = -1;
-  char name[21], url[201], beforeCommand[51], afterCommand[51];
+  int opt;
+  std::string name, url, beforeCommand, afterCommand, finished, id;
 
   while ((opt = getopt(argc, argv, "i:s:u:b:a:f:")) != -1) {
     switch (opt) {
     case 'i':
-      id = toInt(optarg);
+      id = std::stoi(optarg);
       break;
     case 's':
-      strcpy(name, optarg);
+      name = optarg;
       break;
     case 'u':
-      strcpy(url, optarg);
+      url = optarg;
       break;
     case 'b':
-      strcpy(beforeCommand, optarg);
+      beforeCommand = optarg;
       break;
     case 'a':
-      strcpy(afterCommand, optarg);
+      afterCommand = optarg;
       break;
     case 'f':
-      finished = toInt(optarg);
+      finished = std::stoi(optarg);
       break;
     case ':':
       printf("option needs a value\n");
@@ -158,48 +140,43 @@ void modifySite(int argc, char *argv[]) {
     }
   }
 
-  if (id == -1) {
+  if (id.empty()) {
     puts("id is required");
     exit(1);
   }
 
   // no need to check for sql injection bcs it is user sided
-  char sql[360] = "UPDATE sites SET";
+  std::string sql = "UPDATE sites SET";
 
   if (name[0])
-    concat(sql, " name = \"%s\",", name);
+    sql += " name = \"" + name + "\",";
   if (url[0])
-    concat(sql, " url = \"%s\",", url);
+    sql += " url = \"" + url + "\",";
   if (beforeCommand[0])
-    concat(sql, " before_command = \"%s\",", beforeCommand);
+    sql += " before_command = \"" + beforeCommand + "\",";
   if (afterCommand[0])
-    concat(sql, " after_command = \"%s\",", afterCommand);
+    sql += " after_command = \"" + afterCommand + "\",";
 
   // toggle finished
-  if (finished == 2)
-    strcat(sql, " finished = 1 - finished,");
-  else if (finished == 0 || finished == 1) {
-    char tmp[100];
-    sprintf(tmp, " finished = %d,", finished);
-    strcat(sql, tmp);
-  }
+  if (finished[0] == '2')
+    sql += " finished = 1 - finished,";
+  else if (finished[0] == '0' || finished[0] == '1')
+    sql += " finished = " + finished + ",";
 
   // remove last comma
-  sql[strlen(sql) - 1] = '\0';
+  sql.pop_back();
 
-  char tmp[20];
-  sprintf(tmp, " WHERE id = %d;", id);
-  strcat(sql, tmp);
+  sql += " WHERE id = " + id + ",";
 
   exec(sql);
 }
 
 void removeSite(int argc, char *argv[]) {
-  int id = -1;
+  std::string id;
 
   switch (getopt(argc, argv, "i:")) {
   case 'i':
-    id = toInt(optarg);
+    id = optarg;
     break;
   case ':':
     printf("option needs a value\n");
@@ -209,9 +186,7 @@ void removeSite(int argc, char *argv[]) {
     exit(1);
   }
 
-  char sql[50];
-  sprintf(sql, "DELETE FROM sites WHERE id = %d;", id);
-  exec(sql);
+  exec("DELETE FROM sites WHERE id = " + id);
 }
 
 void listSites(int argc, char *argv[]) {
@@ -235,7 +210,7 @@ void listSites(int argc, char *argv[]) {
       c = 1;
       break;
     case 'f':
-      f = toInt(optarg);
+      f = optarg[0];
       break;
     case ':':
       printf("option needs a value\n");
@@ -246,33 +221,30 @@ void listSites(int argc, char *argv[]) {
     }
   }
 
-  char sql[250] = "SELECT ";
+  std::string sql = "SELECT ";
   if (!s && !u && !b && !a && !c)
-    strcat(sql, "*");
+    sql += "*";
   else {
-    strcat(sql, "id");
+    sql += "id";
     if (s)
-      strcat(sql, ",name");
+      sql += ",name";
     if (u)
-      strcat(sql, ",url");
+      sql += ",url";
     if (b)
-      strcat(sql, ",before_command");
+      sql += ",before_command";
     if (a)
-      strcat(sql, ",after_command");
+      sql += ",after_command";
     if (c)
-      strcat(sql, ",finished");
+      sql += ",finished";
   }
 
-  strcat(sql, " FROM sites");
+  sql += " FROM sites";
 
-  if (f == 0 || f == 1) {
-    char tmp[100];
-    sprintf(tmp, " WHERE finished = %d;", f);
-    strcat(sql, tmp);
-  }
+  if (f == 0 || f == 1)
+    sql += &" WHERE finished = "[f];
 
   sqlite3_stmt *stmt;
-  sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+  sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
 
   while (sqlite3_step(stmt) != SQLITE_DONE) {
     int num_cols = sqlite3_column_count(stmt);
@@ -283,26 +255,22 @@ void listSites(int argc, char *argv[]) {
   sqlite3_finalize(stmt);
 }
 
-void open() {
+void openSite() {
   // todo: reset completed if today != last day modified
   sqlite3_stmt *stmt;
   sqlite3_prepare_v2(db,
                      "SELECT id || '_' || name FROM sites WHERE finished = 0;",
                      -1, &stmt, NULL);
 
-  char names[500];
-  while (sqlite3_step(stmt) != SQLITE_DONE) {
-    char name[30] = {'\0'};
-    sprintf(name, "%s\n", sqlite3_column_text(stmt, 0));
-    strcat(names, name);
-  }
+  std::string names;
+  while (sqlite3_step(stmt) != SQLITE_DONE)
+    names += std::string( reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0))) + "\n";
   sqlite3_finalize(stmt);
 
   FILE *pp;
-  char cmd[600];
-  sprintf(cmd, "echo '%s' | dmenu -i", names);
+  std::string cmd = "echo '" + names + "' | dmenu -i";
 
-  pp = popen(cmd, "r");
+  pp = popen(cmd.c_str(), "r");
   char *line;
 
   if (pp == NULL)
@@ -319,27 +287,31 @@ void open() {
     p++;
   *p = '\0';
 
-  char sql[75];
-  sprintf(sql,
-          "SELECT before_command, url, after_command FROM sites WHERE id = %s;",
-          line);
+  std::string sql =
+      "SELECT before_command, url, after_command FROM sites WHERE id = " +
+      std::string(line);
 
   // cmd = {before_command, url, after_command}
-  sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+  sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
   if (sqlite3_step(stmt) == SQLITE_DONE)
     exit(1);
 
-  cmd[0] = '\0';
+  cmd = "";
 
   if (sqlite3_column_type(stmt, 0) != SQLITE_NULL)
-    sprintf(cmd, "%s && ", sqlite3_column_text(stmt, 0));
+    cmd += std::string(
+               reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0))) +
+           " && ";
 
-  sprintf(cmd, "%s $BROWSER %s", cmd, sqlite3_column_text(stmt, 1));
+  cmd +=
+      "$BROWSER " +
+      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)));
 
   if (sqlite3_column_type(stmt, 2) != SQLITE_NULL)
-    sprintf(cmd, "%s && %s", cmd, sqlite3_column_text(stmt, 2));
+    cmd += " && " + std::string(reinterpret_cast<const char *>(
+                        sqlite3_column_text(stmt, 2)));
 
   sqlite3_finalize(stmt);
 
-  system(cmd);
+  system(cmd.c_str());
 }

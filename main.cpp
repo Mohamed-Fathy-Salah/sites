@@ -329,7 +329,7 @@ void openSite() {
     cmd += before + " && ";
 
   cmd +=
-      "$BROWSER " +
+      "$SITES " +
       std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)));
 
   std::string after =

@@ -4,6 +4,7 @@ Sites that I open every day.
 ## Install
 Install `dmenu`, `herbe`
 Run `sudo make`
+Add environment variable `SITES="firefox"` (replace firefox with watever browser u use)
 
 ## Usage
 ### Add new site

@@ -118,7 +118,7 @@ void modifySite(int argc, char *argv[]) {
   while ((opt = getopt(argc, argv, "i:s:u:b:a:f:")) != -1) {
     switch (opt) {
     case 'i':
-      id = std::stoi(optarg);
+      id = optarg;
       break;
     case 's':
       name = optarg;
@@ -133,7 +133,7 @@ void modifySite(int argc, char *argv[]) {
       afterCommand = optarg;
       break;
     case 'f':
-      finished = std::stoi(optarg);
+      finished = optarg;
       break;
     case ':':
       printf("option needs a value\n");
@@ -170,7 +170,7 @@ void modifySite(int argc, char *argv[]) {
   // remove last comma
   sql.pop_back();
 
-  sql += " WHERE id = " + id + ",";
+  sql += " WHERE id = " + id;
 
   exec(sql);
 }
@@ -267,10 +267,13 @@ void resetSites() {
 
   sqlite3_step(stmt);
   char today = sqlite3_column_text(stmt, 0)[0];
+  printf("today: %c", today);
   sqlite3_finalize(stmt);
 
-  if (today == '0')
-    exec("UPDATE sites SET finished = 0");
+  if (today == '0') {
+      exec("UPDATE last_time_modified SET value = date()");
+      exec("UPDATE sites SET finished = 0");
+  }
 }
 
 void openSite() {

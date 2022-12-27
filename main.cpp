@@ -12,12 +12,13 @@ void newSite(int argc, char *argv[]);
 void modifySite(int argc, char *argv[]);
 void removeSite(int argc, char *argv[]);
 void listSites(int argc, char *argv[]);
+void execute(int argc, char *argv[]);
 void openSite();
 
 int main(int argc, char *argv[]) {
   initDB();
 
-  switch (getopt(argc, argv, "nmrl")) {
+  switch (getopt(argc, argv, "nmrle")) {
   case 'n':
     newSite(argc, argv);
     break;
@@ -29,6 +30,9 @@ int main(int argc, char *argv[]) {
     break;
   case 'l':
     listSites(argc, argv);
+    break;
+  case 'e':
+    execute(argc, argv);
     break;
   case '?':
     printf("unknown option: %c\n", optopt);
@@ -271,9 +275,66 @@ void resetSites() {
   sqlite3_finalize(stmt);
 
   if (today == '0') {
-      exec("UPDATE last_time_modified SET value = date()");
-      exec("UPDATE sites SET finished = 0");
+    exec("UPDATE last_time_modified SET value = date()");
+    exec("UPDATE sites SET finished = 0");
   }
+}
+
+void run(std::string id, char update) {
+  sqlite3_stmt *stmt;
+  std::string sql =
+      "SELECT before_command, url, after_command FROM sites WHERE id = " +
+      std::string(id);
+
+  // cmd = {before_command, url, after_command}
+  sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
+  if (sqlite3_step(stmt) == SQLITE_DONE)
+    exit(1);
+
+  std::string cmd = "";
+
+  std::string before =
+      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
+  if (before.size())
+    cmd += before + " ; ";
+
+  cmd +=
+      "$SITES " +
+      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)));
+
+  std::string after =
+      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2)));
+  if (after.size())
+    cmd += " ; " + after;
+
+  sqlite3_finalize(stmt);
+
+  system(cmd.c_str());
+
+  if (update)
+    exec("UPDATE sites SET finished = 1 WHERE id = " + id);
+}
+
+void execute(int argc, char *argv[]) {
+  std::string id;
+  char update = 0;
+  int opt;
+  while ((opt = getopt(argc, argv, "i:f")) != -1)
+    switch (opt) {
+    case 'i':
+      id = optarg;
+      break;
+    case 'f':
+      update = 1;
+      break;
+    case ':':
+      printf("option needs a value\n");
+      exit(1);
+    case '?':
+      puts("not an option");
+      exit(1);
+    }
+  run(id, update);
 }
 
 void openSite() {
@@ -315,34 +376,5 @@ void openSite() {
     p++;
   *p = '\0';
 
-  std::string sql =
-      "SELECT before_command, url, after_command FROM sites WHERE id = " +
-      std::string(line);
-
-  // cmd = {before_command, url, after_command}
-  sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
-  if (sqlite3_step(stmt) == SQLITE_DONE)
-    exit(1);
-
-  cmd = "";
-
-  std::string before =
-      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
-  if (before.size())
-    cmd += before + " && ";
-
-  cmd +=
-      "$SITES " +
-      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)));
-
-  std::string after =
-      std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2)));
-  if (after.size())
-    cmd += " && " + after;
-
-  sqlite3_finalize(stmt);
-
-  system(cmd.c_str());
-
-  exec("UPDATE sites SET finished = 1 WHERE id = " + std::string(line));
+  run(std::string(line), 1);
 }

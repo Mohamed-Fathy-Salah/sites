@@ -100,16 +100,14 @@ void newSite(int argc, char *argv[]) {
       afterCommand = optarg;
       break;
     case ':':
-      printf("option needs a value\n");
-      exit(1);
     case '?':
-      puts("not an option");
+      printHelp();
       exit(1);
     }
   }
 
   if (!name[0] || !url[0]) {
-    puts("name, url are required");
+    printHelp();
     exit(1);
   }
 
@@ -144,16 +142,14 @@ void modifySite(int argc, char *argv[]) {
       finished = optarg;
       break;
     case ':':
-      printf("option needs a value\n");
-      exit(1);
     case '?':
-      puts("not an option");
+      printHelp();
       exit(1);
     }
   }
 
   if (id.empty()) {
-    puts("id is required");
+    printHelp();
     exit(1);
   }
 
@@ -191,10 +187,8 @@ void removeSite(int argc, char *argv[]) {
     id = optarg;
     break;
   case ':':
-    printf("option needs a value\n");
-    exit(1);
   case '?':
-    puts("not an option");
+    printHelp();
     exit(1);
   }
 
@@ -225,10 +219,8 @@ void listSites(int argc, char *argv[]) {
       f = optarg[0];
       break;
     case ':':
-      printf("option needs a value\n");
-      exit(1);
     case '?':
-      puts("not an option");
+      printHelp();
       exit(1);
     }
   }
@@ -332,10 +324,8 @@ void execute(int argc, char *argv[]) {
       update = 1;
       break;
     case ':':
-      printf("option needs a value\n");
-      exit(1);
     case '?':
-      puts("not an option");
+      printHelp();
       exit(1);
     }
   run(id, update);
@@ -384,11 +374,13 @@ void openSite() {
 }
 
 void printHelp() {
-    puts("Add new site:\n\tsites -n -s short -u url [-b before_command] [-a after_command]");
-    puts("Modify site:\n\tsites -m -i id [-s short] [-u url] [-b before_command] [-a after_command] [-f 0(no)|1(yes)|2(toggle)]");
-    puts("Remove site:\n\tsites -r -i id");
-    puts("List sites:\n\tsites -l [-s] [-u] [-b] [-a] [-c] [-f 0(no)|1(yes)]");
-    puts("Execute site:\n\tsites -e -i id [-f update finished to true]");
-    puts("Open site:\n\tsites");
-    puts("help:\n\tsites -h");
+  puts("Add new site:\n\tsites -n -s short -u url [-b before_command] [-a "
+       "after_command]");
+  puts("Modify site:\n\tsites -m -i id [-s short] [-u url] [-b before_command] "
+       "[-a after_command] [-f 0(no)|1(yes)|2(toggle)]");
+  puts("Remove site:\n\tsites -r -i id");
+  puts("List sites:\n\tsites -l [-s] [-u] [-b] [-a] [-c] [-f 0(no)|1(yes)]");
+  puts("Execute site:\n\tsites -e -i id [-f update finished to true]");
+  puts("Open site:\n\tsites");
+  puts("help:\n\tsites -h");
 }

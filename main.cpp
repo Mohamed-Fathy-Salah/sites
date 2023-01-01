@@ -14,11 +14,12 @@ void removeSite(int argc, char *argv[]);
 void listSites(int argc, char *argv[]);
 void execute(int argc, char *argv[]);
 void openSite();
+void printHelp();
 
 int main(int argc, char *argv[]) {
   initDB();
 
-  switch (getopt(argc, argv, "nmrle")) {
+  switch (getopt(argc, argv, "nmrleh")) {
   case 'n':
     newSite(argc, argv);
     break;
@@ -33,6 +34,9 @@ int main(int argc, char *argv[]) {
     break;
   case 'e':
     execute(argc, argv);
+    break;
+  case 'h':
+    printHelp();
     break;
   case '?':
     printf("unknown option: %c\n", optopt);
@@ -377,4 +381,14 @@ void openSite() {
   *p = '\0';
 
   run(std::string(line), 1);
+}
+
+void printHelp() {
+    puts("Add new site:\n\tsites -n -s short -u url [-b before_command] [-a after_command]");
+    puts("Modify site:\n\tsites -m -i id [-s short] [-u url] [-b before_command] [-a after_command] [-f 0(no)|1(yes)|2(toggle)]");
+    puts("Remove site:\n\tsites -r -i id");
+    puts("List sites:\n\tsites -l [-s] [-u] [-b] [-a] [-c] [-f 0(no)|1(yes)]");
+    puts("Execute site:\n\tsites -e -i id [-f update finished to true]");
+    puts("Open site:\n\tsites");
+    puts("help:\n\tsites -h");
 }

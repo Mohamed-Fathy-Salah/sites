@@ -35,3 +35,6 @@ Add environment variable `SITES="firefox"` (replace firefox with watever browser
 ### Open site
 `sites`
 >Open in dmenu unfinished sites, select one of them, site will open in `$SITES`
+
+### Print help
+`sites -h`

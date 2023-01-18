@@ -13,14 +13,13 @@ void modifySite(int argc, char *argv[]);
 void removeSite(int argc, char *argv[]);
 void listSites(int argc, char *argv[]);
 void execute(int argc, char *argv[]);
-void vacuum();
 void openSite();
 void printHelp();
 
 int main(int argc, char *argv[]) {
   initDB();
 
-  switch (getopt(argc, argv, "nmrlevh")) {
+  switch (getopt(argc, argv, "nmrleh")) {
   case 'n':
     newSite(argc, argv);
     break;
@@ -35,9 +34,6 @@ int main(int argc, char *argv[]) {
     break;
   case 'e':
     execute(argc, argv);
-    break;
-  case 'v':
-    vacuum();
     break;
   case 'h':
     printHelp();
@@ -195,7 +191,7 @@ void removeSite(int argc, char *argv[]) {
     exit(1);
   }
 
-  exec("DELETE FROM sites WHERE ROWID = " + id);
+  exec("DELETE FROM sites WHERE ROWID = " + id + "; VACUUM;");
 }
 
 void listSites(int argc, char *argv[]) {
@@ -332,8 +328,6 @@ void execute(int argc, char *argv[]) {
     }
   run(id, update);
 }
-
-void vacuum() { exec("VACUUM;"); }
 
 void openSite() {
   resetSites();

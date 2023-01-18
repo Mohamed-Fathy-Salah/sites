@@ -39,6 +39,12 @@ Add environment variable `SITES="firefox"` (replace firefox with watever browser
 
 >`sites -e -i 4 -f`
 
+### Compact sites
+`sites -v`
+>Remove segmentation between sites after multiple delete operations
+
+>`sites -v`
+
 ### Open site
 `sites`
 >Open in dmenu unfinished sites, select one of them, site will open in `$SITES`

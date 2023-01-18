@@ -76,8 +76,7 @@ void initDB() {
     exit(1);
   }
 
-  exec("CREATE TABLE IF NOT EXISTS sites (id INTEGER PRIMARY KEY "
-       "AUTOINCREMENT, name VARCHAR(20) NOT NULL, url "
+  exec("CREATE TABLE IF NOT EXISTS sites (name VARCHAR(20) NOT NULL, url "
        "VARCHAR(200) NOT NULL, before_command VARCHAR(50), after_command "
        "VARCHAR(50), finished INTEGER DEFAULT 0);");
 
@@ -178,7 +177,7 @@ void modifySite(int argc, char *argv[]) {
   // remove last comma
   sql.pop_back();
 
-  sql += " WHERE id = " + id;
+  sql += " WHERE ROWID = " + id;
 
   exec(sql);
 }
@@ -196,7 +195,7 @@ void removeSite(int argc, char *argv[]) {
     exit(1);
   }
 
-  exec("DELETE FROM sites WHERE id = " + id);
+  exec("DELETE FROM sites WHERE ROWID = " + id);
 }
 
 void listSites(int argc, char *argv[]) {
@@ -229,11 +228,10 @@ void listSites(int argc, char *argv[]) {
     }
   }
 
-  std::string sql = "SELECT ";
+  std::string sql = "SELECT ROWID";
   if (!s && !u && !b && !a && !c)
-    sql += "*";
+    sql += ",*";
   else {
-    sql += "id";
     if (s)
       sql += ",name";
     if (u)
@@ -283,7 +281,7 @@ void resetSites() {
 void run(std::string id, char update) {
   sqlite3_stmt *stmt;
   std::string sql =
-      "SELECT before_command, url, after_command FROM sites WHERE id = " +
+      "SELECT before_command, url, after_command FROM sites WHERE ROWID = " +
       std::string(id);
 
   // cmd = {before_command, url, after_command}
@@ -312,7 +310,7 @@ void run(std::string id, char update) {
   system(cmd.c_str());
 
   if (update)
-    exec("UPDATE sites SET finished = 1 WHERE id = " + id);
+    exec("UPDATE sites SET finished = 1 WHERE ROWID = " + id);
 }
 
 void execute(int argc, char *argv[]) {
@@ -341,7 +339,7 @@ void openSite() {
   resetSites();
   sqlite3_stmt *stmt;
   sqlite3_prepare_v2(db,
-                     "SELECT id || '_' || name FROM sites WHERE finished = 0;",
+                     "SELECT ROWID || '_' || name FROM sites WHERE finished = 0;",
                      -1, &stmt, NULL);
 
   std::string names;
